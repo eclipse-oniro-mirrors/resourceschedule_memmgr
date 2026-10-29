@@ -54,7 +54,9 @@
                 "mem_mgr_client.h",
                 "i_mem_mgr.h",
                 "mem_mgr_proxy.h",
-                "mem_mgr_constant.h"
+                "mem_mgr_constant.h",
+                "i_memory_observer.h",
+                "memory_observer_stub.h"
               ],
               "header_base": "//foundation/resourceschedule/memmgr/interface/innerkits/include/"
             }

@@ -17,6 +17,7 @@
 #define OHOS_MEMORY_MEMMGR_INTERFACES_INNERKITS_INCLUDE_MEM_MGR_CLIENT_H
 
 #include "i_mem_mgr.h"
+#include "i_memory_observer.h"
 #include "single_instance.h"
 #include "app_state_subscriber.h"
 
@@ -75,7 +76,8 @@ public:
     int32_t Reclaim(int32_t pid, int32_t fd);
     int32_t Resume(int32_t pid, int32_t fd);
     int32_t SetDmabufInfo(int32_t fd, DmabufRsInfo info);
-    
+    int32_t QueryProcessStateWithCallback(int32_t pid, const sptr<IMemoryObserver> callback, int32_t timeOut);
+
 private:
     sptr<IMemMgr> GetMemMgrService();
     std::mutex mutex_;

@@ -39,6 +39,7 @@ ohos_shared_library("memmgrclient") {
     "src/mem_mgr_process_state_info.cpp",
     "src/mem_mgr_proxy.cpp",
     "src/mem_mgr_window_info.cpp",
+    "src/memory_observer_stub.cpp",
   ]
 
   public_configs = [ ":memmgr_client_config" ]
