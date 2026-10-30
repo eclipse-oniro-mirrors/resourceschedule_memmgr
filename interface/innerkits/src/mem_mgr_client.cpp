@@ -331,5 +331,10 @@ int32_t MemMgrClient::Resume(int32_t pid, int32_t fd)
 {
     return 0;
 }
+
+int32_t MemMgrClient::QueryProcessStateWithCallback(int32_t pid, const sptr<IMemoryObserver> callback, int32_t timeOut)
+{
+    return 0;
+}
 } // namespace Memory
 } // namespace OHOS
