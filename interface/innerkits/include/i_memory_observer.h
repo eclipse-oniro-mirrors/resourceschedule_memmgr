@@ -23,7 +23,7 @@ namespace OHOS {
 namespace Memory {
 
 enum class IMemoryObserverCode : uint32_t {
-    ON_PROCESS_AVAILABLE = 0,
+    ON_PROCESS_AVAILABLE = 2,
 };
 
 class IMemoryObserver : public IRemoteBroker {
