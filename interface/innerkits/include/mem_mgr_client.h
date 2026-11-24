@@ -77,6 +77,8 @@ public:
     int32_t Resume(int32_t pid, int32_t fd);
     int32_t SetDmabufInfo(int32_t fd, DmabufRsInfo info);
     int32_t QueryProcessStateWithCallback(int32_t pid, const sptr<IMemoryObserver> callback, int32_t timeOut);
+    int32_t NotifyProcessLifecycle(int32_t pid, int32_t uid, int32_t callerPid, int32_t callerUid,
+        LifecycleEvent event);
 
 private:
     sptr<IMemMgr> GetMemMgrService();
