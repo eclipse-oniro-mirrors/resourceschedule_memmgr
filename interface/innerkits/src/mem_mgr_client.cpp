@@ -336,5 +336,11 @@ int32_t MemMgrClient::QueryProcessStateWithCallback(int32_t pid, const sptr<IMem
 {
     return 0;
 }
+
+int32_t MemMgrClient::NotifyProcessLifecycle(int32_t pid, int32_t uid, int32_t callerPid, int32_t callerUid,
+    LifecycleEvent event)
+{
+    return 0;
+}
 } // namespace Memory
 } // namespace OHOS

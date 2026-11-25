@@ -31,6 +31,13 @@
 
 namespace OHOS {
 namespace Memory {
+
+enum class LifecycleEvent : uint32_t {
+    CLI_TOOL_START = 0,
+    CLI_TOOL_END,
+    UNKNOWN_TYPE,
+};
+
 class IMemMgr : public IRemoteBroker {
 public:
     DECLARE_INTERFACE_DESCRIPTOR(u"ohos.memory.MemMgr");
