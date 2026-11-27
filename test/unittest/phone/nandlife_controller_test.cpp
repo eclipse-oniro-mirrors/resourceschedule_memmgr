@@ -1,5 +1,5 @@
-/*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+/**
+ * Copyright (c) 2022-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,7 +14,9 @@
  */
 
 #include "gtest/gtest.h"
+#include <string>
 
+#include "kernel_interface.h"
 #include "utils.h"
 
 #define private public
@@ -27,6 +29,20 @@ namespace OHOS {
 namespace Memory {
 using namespace testing;
 using namespace testing::ext;
+
+static bool IsEswapInfoAvailable()
+{
+    std::string content;
+    return KernelInterface::GetInstance().ReadFromFile("/dev/memcg/memory.eswap_info", content) &&
+        content.find("Total Swapout Size") != std::string::npos;
+}
+
+static void SkipIfEswapInfoUnavailable()
+{
+    if (!IsEswapInfoAvailable()) {
+        GTEST_SKIP() << "eswap info is unavailable";
+    }
+}
 
 class NandLifeControllerTest : public testing::Test {
 public:
@@ -54,6 +70,7 @@ void NandLifeControllerTest::TearDown()
 
 HWTEST_F(NandLifeControllerTest, GetSwapOutKBSinceKernelBootTest, TestSize.Level1)
 {
+    SkipIfEswapInfoUnavailable();
     unsigned long long swapOutKBSinceKernelBoot = 0;
     EXPECT_EQ(NandLifeController::GetInstance().GetSwapOutKBSinceKernelBoot(swapOutKBSinceKernelBoot), true);
 }

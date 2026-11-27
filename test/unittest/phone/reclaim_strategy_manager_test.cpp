@@ -30,6 +30,12 @@ namespace Memory {
 using namespace testing;
 using namespace testing::ext;
 
+static bool HasMemcgKernelSupport()
+{
+    return KernelInterface::GetInstance().IsFileExists("/dev/memcg/memory.app_score") &&
+        KernelInterface::GetInstance().IsFileExists("/dev/memcg/memory.zswapd_single_memcg_param");
+}
+
 class ReclaimStrategyManagerTest : public testing::Test {
 public:
     static void SetUpTestCase();
@@ -56,6 +62,9 @@ void ReclaimStrategyManagerTest::TearDown()
 
 HWTEST_F(ReclaimStrategyManagerTest, InitTest, TestSize.Level1)
 {
+    if (!HasMemcgKernelSupport()) {
+        GTEST_SKIP() << "memcg kernel nodes unavailable";
+    }
     EXPECT_EQ(ReclaimStrategyManager::GetInstance().Init(), true);
 }
 
@@ -75,6 +84,9 @@ HWTEST_F(ReclaimStrategyManagerTest, NotifyAppStateChangedTest, TestSize.Level1)
 
 HWTEST_F(ReclaimStrategyManagerTest, NotifyAccountDiedTest, TestSize.Level1)
 {
+    if (!HasMemcgKernelSupport()) {
+        GTEST_SKIP() << "memcg kernel nodes unavailable";
+    }
     int pid = 1234567;
     int appId = 111111;
     std::string appName = "com.test";
@@ -85,7 +97,7 @@ HWTEST_F(ReclaimStrategyManagerTest, NotifyAccountDiedTest, TestSize.Level1)
     ReclaimStrategyManager::GetInstance().NotifyAppStateChanged(para);
     sleep(3);
     UserMemcg* memcg = MemcgMgr::GetInstance().GetUserMemcg(userId);
-    EXPECT_EQ(memcg != nullptr, true);
+    ASSERT_NE(memcg, nullptr);
     std::string memcgPath = memcg->GetMemcgPath_();
     ReclaimStrategyManager::GetInstance().NotifyAccountDied(userId);
     sleep(3);
@@ -95,6 +107,9 @@ HWTEST_F(ReclaimStrategyManagerTest, NotifyAccountDiedTest, TestSize.Level1)
 
 HWTEST_F(ReclaimStrategyManagerTest, NotifyAccountPriorityChangedTest, TestSize.Level1)
 {
+    if (!HasMemcgKernelSupport()) {
+        GTEST_SKIP() << "memcg kernel nodes unavailable";
+    }
     int pid = 1234567;
     int appId = 111111;
     std::string appName = "com.test";
@@ -109,7 +124,7 @@ HWTEST_F(ReclaimStrategyManagerTest, NotifyAccountPriorityChangedTest, TestSize.
     ReclaimStrategyManager::GetInstance().NotifyAppStateChanged(para);
     sleep(3);
     UserMemcg* memcg = MemcgMgr::GetInstance().GetUserMemcg(userId);
-    EXPECT_EQ(memcg != nullptr, true);
+    ASSERT_NE(memcg, nullptr);
     std::string memcgPath = memcg->GetMemcgPath_();
     ReclaimStrategyManager::GetInstance().NotifyAccountPriorityChanged(userId, score + score);
     sleep(3);
@@ -126,6 +141,9 @@ HWTEST_F(ReclaimStrategyManagerTest, CreateEventHandlerTest, TestSize.Level1)
 
 HWTEST_F(ReclaimStrategyManagerTest, HandleProcessCreateTest, TestSize.Level1)
 {
+    if (!HasMemcgKernelSupport()) {
+        GTEST_SKIP() << "memcg kernel nodes unavailable";
+    }
     int pid = 1234567;
     int appId = 111111;
     std::string appName = "com.test";
@@ -136,7 +154,7 @@ HWTEST_F(ReclaimStrategyManagerTest, HandleProcessCreateTest, TestSize.Level1)
     ReclaimStrategyManager::GetInstance().NotifyAppStateChanged(para);
     sleep(3);
     UserMemcg* memcg = MemcgMgr::GetInstance().GetUserMemcg(userId);
-    EXPECT_EQ(memcg != nullptr, true);
+    ASSERT_NE(memcg, nullptr);
     std::string memcgPath = memcg->GetMemcgPath_();
     EXPECT_EQ(KernelInterface::GetInstance().IsDirExists(memcgPath), true);
     EXPECT_EQ(MemcgMgr::GetInstance().RemoveUserMemcg(userId), true);
@@ -173,6 +191,9 @@ HWTEST_F(ReclaimStrategyManagerTest, GetValidScoreTest, TestSize.Level1)
 
 HWTEST_F(ReclaimStrategyManagerTest, HandleAppStateChangedTest, TestSize.Level1)
 {
+    if (!HasMemcgKernelSupport()) {
+        GTEST_SKIP() << "memcg kernel nodes unavailable";
+    }
     int pid = 1234567;
     int appId = 111111;
     std::string appName = "com.test";
@@ -191,6 +212,9 @@ HWTEST_F(ReclaimStrategyManagerTest, HandleAppStateChangedTest, TestSize.Level1)
 
 HWTEST_F(ReclaimStrategyManagerTest, HandleAccountDiedTest, TestSize.Level1)
 {
+    if (!HasMemcgKernelSupport()) {
+        GTEST_SKIP() << "memcg kernel nodes unavailable";
+    }
     int pid = 1234567;
     int appId = 111111;
     std::string appName = "com.test";
@@ -208,6 +232,9 @@ HWTEST_F(ReclaimStrategyManagerTest, HandleAccountDiedTest, TestSize.Level1)
 
 HWTEST_F(ReclaimStrategyManagerTest, HandleAccountPriorityChangedTest, TestSize.Level1)
 {
+    if (!HasMemcgKernelSupport()) {
+        GTEST_SKIP() << "memcg kernel nodes unavailable";
+    }
     int pid = 1234567;
     int appId = 111111;
     std::string appName = "com.test";
