@@ -1,5 +1,5 @@
-/*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+/**
+ * Copyright (c) 2022-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -26,6 +26,21 @@ namespace OHOS {
 namespace Memory {
 using namespace testing;
 using namespace testing::ext;
+
+static bool IsEswapInfoAvailable()
+{
+    const std::string path = "/dev/memcg/memory.eswap_info";
+    std::string content;
+    return KernelInterface::GetInstance().ReadFromFile(path, content) &&
+        content.find("Total Swapout Size") != std::string::npos;
+}
+
+static void SkipIfEswapInfoUnavailable()
+{
+    if (!IsEswapInfoAvailable()) {
+        GTEST_SKIP() << "eswap info is unavailable";
+    }
+}
 
 class KernelInterfaceTest : public testing::Test {
 public:
@@ -314,6 +329,7 @@ HWTEST_F(KernelInterfaceTest, GetCurrentBufferTest, TestSize.Level1)
 
 HWTEST_F(KernelInterfaceTest, ReadSwapOutKBSinceKernelBoot, TestSize.Level1)
 {
+    SkipIfEswapInfoUnavailable();
     unsigned long long retFun;
     bool ret = KernelInterface::GetInstance().ReadSwapOutKBSinceKernelBoot("/dev/memcg/memory.eswap_info",
                                                                                 "Total Swapout Size", retFun);

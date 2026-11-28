@@ -1,5 +1,5 @@
-/*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+/**
+ * Copyright (c) 2022-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,7 +14,9 @@
  */
 
 #ifdef USE_PURGEABLE_MEMORY
+#include <fcntl.h>
 #include <thread>
+#include <unistd.h>
 
 #include "gtest/gtest.h"
 #include "purgeable_mem_utils.h"
@@ -37,6 +39,63 @@ namespace {
 static constexpr int32_t SLEEP_TIME = 500;
 static constexpr int32_t SLEEP_TIME_LONG = 5000;
 }
+
+static bool IsMemMgrServiceAvailable()
+{
+    return MemMgrClient::GetInstance().GetMemMgrService() != nullptr;
+}
+
+static bool CanWriteFile(const std::string &path)
+{
+    int fd = open(path.c_str(), O_WRONLY);
+    if (fd == -1) {
+        return false;
+    }
+    close(fd);
+    return true;
+}
+
+static bool HasPurgeableHeapStats()
+{
+    std::vector<std::string> lines;
+    if (!KernelInterface::GetInstance().ReadLinesFromFile(KernelInterface::MEMINFO_PATH, lines)) {
+        return false;
+    }
+    bool hasActive = false;
+    bool hasInactive = false;
+    bool hasPined = false;
+    for (const auto &line : lines) {
+        if (line.rfind(PurgeableMemUtils::ACTIVE_PURGEABLE_HEAP, 0) == 0) {
+            hasActive = true;
+        } else if (line.rfind(PurgeableMemUtils::INACTIVE_PURGEABLE_HEAP, 0) == 0) {
+            hasInactive = true;
+        } else if (line.rfind(PurgeableMemUtils::PINED_PURGEABLE_HEAP, 0) == 0) {
+            hasPined = true;
+        }
+    }
+    return hasActive && hasInactive && hasPined;
+}
+
+static bool HasProcPurgeableHeapStats()
+{
+    std::string path = KernelInterface::GetInstance().JoinPath(KernelInterface::ROOT_PROC_PATH, "1",
+        KernelInterface::FILE_PROC_STATUS);
+    std::vector<std::string> lines;
+    if (!KernelInterface::GetInstance().ReadLinesFromFile(path, lines)) {
+        return false;
+    }
+    bool hasPurgSum = false;
+    bool hasPurgPin = false;
+    for (const auto &line : lines) {
+        if (line.rfind(PurgeableMemUtils::PROC_PURGEABLE_HEAP, 0) == 0) {
+            hasPurgSum = true;
+        } else if (line.rfind(PurgeableMemUtils::PROC_PINED_PURGEABLE_HEAP, 0) == 0) {
+            hasPurgPin = true;
+        }
+    }
+    return hasPurgSum && hasPurgPin;
+}
+
 using namespace testing;
 using namespace testing::ext;
 
@@ -151,6 +210,9 @@ void PurgeableMemUtilsTest::TearDown()
 
 HWTEST_F(PurgeableMemMgrTest, SubscribeAppState_Test, TestSize.Level1)
 {
+    if (!IsMemMgrServiceAvailable()) {
+        GTEST_SKIP() << "MemMgrService is unavailable";
+    }
     std::shared_ptr<AppStateSubscriberTest> appStateSubscriberTest_1 = std::make_shared<AppStateSubscriberTest>();
     EXPECT_NE(appStateSubscriberTest_1, nullptr);
     MemMgrClient::GetInstance().SubscribeAppState(*appStateSubscriberTest_1);
@@ -171,6 +233,9 @@ HWTEST_F(PurgeableMemMgrTest, SubscribeAppState_Test, TestSize.Level1)
 
 HWTEST_F(PurgeableMemMgrTest, UnsubscribeAppState_Test, TestSize.Level1)
 {
+    if (!IsMemMgrServiceAvailable()) {
+        GTEST_SKIP() << "MemMgrService is unavailable";
+    }
     std::shared_ptr<AppStateSubscriberTest> appStateSubscriberTest_1 = std::make_shared<AppStateSubscriberTest>();
     EXPECT_NE(appStateSubscriberTest_1, nullptr);
     MemMgrClient::GetInstance().SubscribeAppState(*appStateSubscriberTest_1);
@@ -207,6 +272,9 @@ HWTEST_F(PurgeableMemMgrTest, AppStateListener_Test, TestSize.Level1)
 
 HWTEST_F(PurgeableMemUtilsTest, GetPurgeableHeapInfoTest, TestSize.Level1)
 {
+    if (!HasPurgeableHeapStats()) {
+        GTEST_SKIP() << "purgeable heap stats are unavailable";
+    }
     int reclaimableKB;
     bool ret = PurgeableMemUtils::GetInstance().GetPurgeableHeapInfo(reclaimableKB);
     printf("ret=%d,reclaimableKB=%dKB\n", ret, reclaimableKB);
@@ -216,6 +284,9 @@ HWTEST_F(PurgeableMemUtilsTest, GetPurgeableHeapInfoTest, TestSize.Level1)
 
 HWTEST_F(PurgeableMemUtilsTest, GetProcPurgeableHeapInfoTest, TestSize.Level1)
 {
+    if (!HasProcPurgeableHeapStats()) {
+        GTEST_SKIP() << "process purgeable heap stats are unavailable";
+    }
     int reclaimableKB;
     bool ret = PurgeableMemUtils::GetInstance().GetProcPurgeableHeapInfo(1, reclaimableKB);
     printf("pid=%d,reclaimableKB=%dKB\n", 1, reclaimableKB);
@@ -225,6 +296,9 @@ HWTEST_F(PurgeableMemUtilsTest, GetProcPurgeableHeapInfoTest, TestSize.Level1)
 
 HWTEST_F(PurgeableMemUtilsTest, PurgeHeapAllTest, TestSize.Level1)
 {
+    if (!CanWriteFile(PurgeableMemUtils::PATH_PURGE_HEAP)) {
+        GTEST_SKIP() << "purgeable heap node is unavailable";
+    }
     bool ret = PurgeableMemUtils::GetInstance().PurgeHeapAll();
     EXPECT_EQ(ret, true);
 }
@@ -232,6 +306,9 @@ HWTEST_F(PurgeableMemUtilsTest, PurgeHeapAllTest, TestSize.Level1)
 HWTEST_F(PurgeableMemUtilsTest, PurgeHeapAllTestDebug1, TestSize.Level1)
 {
     const char *path = PurgeableMemUtils::PATH_PURGE_HEAP.c_str();
+    if (!CanWriteFile(PurgeableMemUtils::PATH_PURGE_HEAP)) {
+        GTEST_SKIP() << "purgeable heap node is unavailable";
+    }
     int fd = open(path, O_WRONLY);
     if (fd == -1) {
         printf("open %s failed!\n", path);
@@ -243,18 +320,29 @@ HWTEST_F(PurgeableMemUtilsTest, PurgeHeapAllTestDebug1, TestSize.Level1)
 HWTEST_F(PurgeableMemUtilsTest, PurgeHeapMemcgTest, TestSize.Level1)
 {
     std::string memcgPath = "/dev/memcg";
+    std::string path = KernelInterface::GetInstance().JoinPath(memcgPath,
+        PurgeableMemUtils::FILE_PURGE_MEMCG_HEAP);
+    if (!CanWriteFile(path)) {
+        GTEST_SKIP() << "memcg purgeable heap node is unavailable";
+    }
     bool ret = PurgeableMemUtils::GetInstance().PurgeHeapMemcg(memcgPath, 1024);
     EXPECT_EQ(ret, true);
 }
 
 HWTEST_F(PurgeableMemUtilsTest, PurgeAshmAllTest, TestSize.Level1)
 {
+    if (!CanWriteFile(PurgeableMemUtils::PATH_PURGEABLE_ASHMEM)) {
+        GTEST_SKIP() << "purgeable ashmem node is unavailable";
+    }
     bool ret = PurgeableMemUtils::GetInstance().PurgeAshmAll();
     EXPECT_EQ(ret, true);
 }
 
 HWTEST_F(PurgeableMemUtilsTest, PurgeAshmByIdWithTimeTest, TestSize.Level1)
 {
+    if (!CanWriteFile(PurgeableMemUtils::PATH_PURGEABLE_ASHMEM)) {
+        GTEST_SKIP() << "purgeable ashmem node is unavailable";
+    }
     std::string idWithTime = "1000 1000";
     bool ret = PurgeableMemUtils::GetInstance().PurgeAshmByIdWithTime(idWithTime);
     EXPECT_EQ(ret, true);

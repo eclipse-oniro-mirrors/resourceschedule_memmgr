@@ -1,5 +1,5 @@
-/*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+/**
+ * Copyright (c) 2022-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -32,6 +32,13 @@ using namespace testing;
 using namespace testing::ext;
 
 constexpr int IPC_STUB_ERR = 300;
+
+static bool IsMemMgrServiceAvailable()
+{
+    return MemMgrClient::GetInstance().GetMemMgrService() != nullptr;
+}
+
+
 class AppStateSubscriberTest : public AppStateSubscriber {
 public:
     void OnConnected() override;
@@ -100,6 +107,9 @@ void InnerkitsTest::TearDown()
 
 HWTEST_F(InnerkitsTest, GetBundlePriorityList_Test, TestSize.Level1)
 {
+    if (!IsMemMgrServiceAvailable()) {
+        GTEST_SKIP() << "MemMgrService is unavailable";
+    }
     BundlePriorityList bundlePrioList;
     int32_t ret = MemMgrClient::GetInstance().GetBundlePriorityList(bundlePrioList);
     EXPECT_EQ(ret, 0);
@@ -114,12 +124,18 @@ HWTEST_F(InnerkitsTest, GetPriorityDescTest, TestSize.Level1)
 
 HWTEST_F(InnerkitsTest, NotifyDistDevStatus_Test, TestSize.Level1)
 {
+    if (!IsMemMgrServiceAvailable()) {
+        GTEST_SKIP() << "MemMgrService is unavailable";
+    }
     int32_t ret = MemMgrClient::GetInstance().NotifyDistDevStatus(123, 456, "dist_dev_test", true);
     EXPECT_EQ(ret, 0);
 }
 
 HWTEST_F(InnerkitsTest, GetKillLevelOfLmkd_Test, TestSize.Level1)
 {
+    if (!IsMemMgrServiceAvailable()) {
+        GTEST_SKIP() << "MemMgrService is unavailable";
+    }
     int32_t killLevel;
     int32_t ret = MemMgrClient::GetInstance().GetKillLevelOfLmkd(killLevel);
     EXPECT_EQ(ret, 0);
@@ -130,6 +146,9 @@ HWTEST_F(InnerkitsTest, GetKillLevelOfLmkd_Test, TestSize.Level1)
 
 HWTEST_F(InnerkitsTest, RegisterActiveApps_Test, TestSize.Level1)
 {
+    if (!IsMemMgrServiceAvailable()) {
+        GTEST_SKIP() << "MemMgrService is unavailable";
+    }
     int32_t pid = 1234;
     int32_t uid = 20012001;
     int32_t ret = MemMgrClient::GetInstance().RegisterActiveApps(pid, uid);
@@ -138,6 +157,9 @@ HWTEST_F(InnerkitsTest, RegisterActiveApps_Test, TestSize.Level1)
 
 HWTEST_F(InnerkitsTest, DeregisterActiveApps_Test, TestSize.Level1)
 {
+    if (!IsMemMgrServiceAvailable()) {
+        GTEST_SKIP() << "MemMgrService is unavailable";
+    }
     int32_t pid = 1234;
     int32_t uid = 20012001;
     int32_t ret = MemMgrClient::GetInstance().DeregisterActiveApps(pid, uid);
@@ -146,6 +168,9 @@ HWTEST_F(InnerkitsTest, DeregisterActiveApps_Test, TestSize.Level1)
 
 HWTEST_F(InnerkitsTest, SubscribeAppState_Test, TestSize.Level1)
 {
+    if (!IsMemMgrServiceAvailable()) {
+        GTEST_SKIP() << "MemMgrService is unavailable";
+    }
     std::shared_ptr<AppStateSubscriberTest> appStateSubscriberTest_1 = std::make_shared<AppStateSubscriberTest>();
     EXPECT_NE(appStateSubscriberTest_1, nullptr);
     int32_t ret = MemMgrClient::GetInstance().SubscribeAppState(*appStateSubscriberTest_1);
@@ -155,6 +180,9 @@ HWTEST_F(InnerkitsTest, SubscribeAppState_Test, TestSize.Level1)
 
 HWTEST_F(InnerkitsTest, UnsubscribeAppState_Test, TestSize.Level1)
 {
+    if (!IsMemMgrServiceAvailable()) {
+        GTEST_SKIP() << "MemMgrService is unavailable";
+    }
     std::shared_ptr<AppStateSubscriberTest> appStateSubscriberTest_1 = std::make_shared<AppStateSubscriberTest>();
     EXPECT_NE(appStateSubscriberTest_1, nullptr);
     MemMgrClient::GetInstance().SubscribeAppState(*appStateSubscriberTest_1);
@@ -171,6 +199,9 @@ HWTEST_F(InnerkitsTest, GetAvailableMemory_Test, TestSize.Level1)
 #else
 HWTEST_F(InnerkitsTest, RegisterActiveApps_Test, TestSize.Level1)
 {
+    if (!IsMemMgrServiceAvailable()) {
+        GTEST_SKIP() << "MemMgrService is unavailable";
+    }
     int32_t pid = 1234;
     int32_t uid = 20012001;
     int32_t ret = MemMgrClient::GetInstance().RegisterActiveApps(pid, uid);
@@ -179,6 +210,9 @@ HWTEST_F(InnerkitsTest, RegisterActiveApps_Test, TestSize.Level1)
 
 HWTEST_F(InnerkitsTest, DeregisterActiveApps_Test, TestSize.Level1)
 {
+    if (!IsMemMgrServiceAvailable()) {
+        GTEST_SKIP() << "MemMgrService is unavailable";
+    }
     int32_t pid = 1234;
     int32_t uid = 20012001;
     int32_t ret = MemMgrClient::GetInstance().DeregisterActiveApps(pid, uid);
@@ -187,6 +221,9 @@ HWTEST_F(InnerkitsTest, DeregisterActiveApps_Test, TestSize.Level1)
 
 HWTEST_F(InnerkitsTest, SubscribeAppState_Test, TestSize.Level1)
 {
+    if (!IsMemMgrServiceAvailable()) {
+        GTEST_SKIP() << "MemMgrService is unavailable";
+    }
     std::shared_ptr<AppStateSubscriberTest> appStateSubscriberTest_1 = std::make_shared<AppStateSubscriberTest>();
     EXPECT_NE(appStateSubscriberTest_1, nullptr);
     int32_t ret = MemMgrClient::GetInstance().SubscribeAppState(*appStateSubscriberTest_1);
@@ -196,6 +233,9 @@ HWTEST_F(InnerkitsTest, SubscribeAppState_Test, TestSize.Level1)
 
 HWTEST_F(InnerkitsTest, UnsubscribeAppState_Test, TestSize.Level1)
 {
+    if (!IsMemMgrServiceAvailable()) {
+        GTEST_SKIP() << "MemMgrService is unavailable";
+    }
     std::shared_ptr<AppStateSubscriberTest> appStateSubscriberTest_1 = std::make_shared<AppStateSubscriberTest>();
     EXPECT_NE(appStateSubscriberTest_1, nullptr);
     MemMgrClient::GetInstance().SubscribeAppState(*appStateSubscriberTest_1);
@@ -213,6 +253,9 @@ HWTEST_F(InnerkitsTest, GetAvailableMemory_Test, TestSize.Level1)
 
 HWTEST_F(InnerkitsTest, GetReclaimPriorityByPid_Test, TestSize.Level1)
 {
+    if (!IsMemMgrServiceAvailable()) {
+        GTEST_SKIP() << "MemMgrService is unavailable";
+    }
     int32_t pid = 1;
     int32_t priority = 1001;
     int32_t ret = MemMgrClient::GetInstance().GetReclaimPriorityByPid(pid, priority);
@@ -222,6 +265,9 @@ HWTEST_F(InnerkitsTest, GetReclaimPriorityByPid_Test, TestSize.Level1)
 
 HWTEST_F(InnerkitsTest, NotifyProcessStateChangedSync_Test, TestSize.Level1)
 {
+    if (!IsMemMgrServiceAvailable()) {
+        GTEST_SKIP() << "MemMgrService is unavailable";
+    }
     MemMgrProcessStateInfo processStateInfo;
     processStateInfo.pid_ = 1014;
     processStateInfo.uid_ = 20100001;
@@ -232,6 +278,9 @@ HWTEST_F(InnerkitsTest, NotifyProcessStateChangedSync_Test, TestSize.Level1)
 
 HWTEST_F(InnerkitsTest, NotifyProcessStateChangedAsync_Test, TestSize.Level1)
 {
+    if (!IsMemMgrServiceAvailable()) {
+        GTEST_SKIP() << "MemMgrService is unavailable";
+    }
     MemMgrProcessStateInfo processStateInfo;
     processStateInfo.pid_ = 1034;
     processStateInfo.uid_ = 20300001;
@@ -242,6 +291,9 @@ HWTEST_F(InnerkitsTest, NotifyProcessStateChangedAsync_Test, TestSize.Level1)
 
 HWTEST_F(InnerkitsTest, NotifyProcessStatus_Test, TestSize.Level1)
 {
+    if (!IsMemMgrServiceAvailable()) {
+        GTEST_SKIP() << "MemMgrService is unavailable";
+    }
     pid_t pid = 1035;
     int type = 1;
     int status = 1;
@@ -252,6 +304,9 @@ HWTEST_F(InnerkitsTest, NotifyProcessStatus_Test, TestSize.Level1)
 
 HWTEST_F(InnerkitsTest, SetCritical_Test, TestSize.Level1)
 {
+    if (!IsMemMgrServiceAvailable()) {
+        GTEST_SKIP() << "MemMgrService is unavailable";
+    }
     pid_t pid = 1036;
     int saId = 1000;
     int ret = MemMgrClient::GetInstance().SetCritical(pid, true, saId);

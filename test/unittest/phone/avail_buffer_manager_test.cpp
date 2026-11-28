@@ -1,5 +1,5 @@
-/*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+/**
+ * Copyright (c) 2022-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,7 +14,11 @@
  */
 
 #include "gtest/gtest.h"
+#include <cstdlib>
+#include <regex>
+#include <unistd.h>
 
+#include "kernel_interface.h"
 #include "utils.h"
 
 #define private public
@@ -28,6 +32,43 @@ namespace OHOS {
 namespace Memory {
 using namespace testing;
 using namespace testing::ext;
+
+static constexpr int DECIMAL_BASE = 10;
+
+static bool IsAvailBufferNodeAvailable()
+{
+    std::string path = KernelInterface::GetInstance().JoinPath(KernelInterface::MEMCG_BASE_PATH,
+        "memory.avail_buffers");
+    return access(path.c_str(), W_OK) == 0;
+}
+
+static bool IsZramSwapEnabled()
+{
+    std::string content;
+    if (!KernelInterface::GetInstance().ReadFromFile(KernelInterface::MEMINFO_PATH, content)) {
+        return false;
+    }
+    std::regex re("SwapTotal:[[:s:]]*([[:d:]]+) kB");
+    std::smatch res;
+    if (!std::regex_search(content, res, re)) {
+        return false;
+    }
+    return std::strtoul(res.str(1).c_str(), nullptr, DECIMAL_BASE) > 0;
+}
+
+static void SkipIfAvailBufferNodeUnavailable()
+{
+    if (!IsAvailBufferNodeAvailable()) {
+        GTEST_SKIP() << "memcg avail_buffer node is unavailable";
+    }
+}
+
+static void SkipIfZramSwapUnavailable()
+{
+    if (!IsZramSwapEnabled()) {
+        GTEST_SKIP() << "zram swap is unavailable";
+    }
+}
 
 class AvailBufferManagerTest : public testing::Test {
 public:
@@ -61,11 +102,13 @@ HWTEST_F(AvailBufferManagerTest, InitTest, TestSize.Level1)
 
 HWTEST_F(AvailBufferManagerTest, WriteAvailBufferToKernelTest, TestSize.Level1)
 {
+    SkipIfAvailBufferNodeUnavailable();
     EXPECT_EQ(AvailBufferManager::GetInstance().WriteAvailBufferToKernel(), true);
 }
 
 HWTEST_F(AvailBufferManagerTest, SetAvailBufferTest, TestSize.Level1)
 {
+    SkipIfAvailBufferNodeUnavailable();
     unsigned int availBuffer = 123;
     unsigned int minAvailBuffer = 100;
     unsigned int highAvailBuffer = 666;
@@ -91,6 +134,7 @@ HWTEST_F(AvailBufferManagerTest, CloseZswapdTest, TestSize.Level1)
 
 HWTEST_F(AvailBufferManagerTest, InitAvailBufferTest, TestSize.Level1)
 {
+    SkipIfZramSwapUnavailable();
     AvailBufferManager::GetInstance().zramEnable_ = false;
     EXPECT_EQ(AvailBufferManager::GetInstance().zramEnable_, false);
     AvailBufferManager::GetInstance().InitAvailBuffer();
@@ -104,6 +148,7 @@ HWTEST_F(AvailBufferManagerTest, GetEventHandlerTest, TestSize.Level1)
 
 HWTEST_F(AvailBufferManagerTest, UpdateZramEnableFromKernelTest, TestSize.Level1)
 {
+    SkipIfZramSwapUnavailable();
     AvailBufferManager::GetInstance().zramEnable_ = false;
     EXPECT_EQ(AvailBufferManager::GetInstance().zramEnable_, false);
     AvailBufferManager::GetInstance().UpdateZramEnableFromKernel();

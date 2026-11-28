@@ -1,5 +1,5 @@
-/*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+/**
+ * Copyright (c) 2022-2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,7 +14,10 @@
  */
 
 #include "gtest/gtest.h"
+#include <string>
+#include <unistd.h>
 
+#include "kernel_interface.h"
 #include "utils.h"
 
 #define private public
@@ -27,6 +30,71 @@ namespace OHOS {
 namespace Memory {
 using namespace testing;
 using namespace testing::ext;
+
+static std::string GetMemcgNodePath(const std::string &node)
+{
+    return KernelInterface::GetInstance().JoinPath(KernelInterface::MEMCG_BASE_PATH, node);
+}
+
+static bool CanWriteMemcgNode(const std::string &node)
+{
+    return access(GetMemcgNodePath(node).c_str(), W_OK) == 0;
+}
+
+static bool HasMemcgMemoryStat()
+{
+    std::string content;
+    return access(GetMemcgNodePath("memory.stat").c_str(), R_OK) == 0 &&
+        KernelInterface::GetInstance().ReadFromFile(GetMemcgNodePath("memory.stat"), content) &&
+        content.find("Anon:") != std::string::npos && content.find("zram:") != std::string::npos &&
+        content.find("Eswap:") != std::string::npos;
+}
+
+static bool CanReadMemcgReclaimRatios()
+{
+    std::string content;
+    const std::string node = "memory.zswapd_single_memcg_param";
+    return access(GetMemcgNodePath(node).c_str(), R_OK) == 0 &&
+        KernelInterface::GetInstance().ReadFromFile(GetMemcgNodePath(node), content) &&
+        content.find("memcg score:") != std::string::npos &&
+        content.find("memcg ub_mem2zram_ratio:") != std::string::npos &&
+        content.find("memcg ub_zram2ufs_ratio:") != std::string::npos &&
+        content.find("memcg refault_threshold:") != std::string::npos;
+}
+
+static bool CanWriteMemcgReclaimRatios()
+{
+    return CanWriteMemcgNode("memory.zswapd_single_memcg_param") && CanReadMemcgReclaimRatios();
+}
+
+static void SkipIfMemcgMemoryStatUnavailable()
+{
+    if (!HasMemcgMemoryStat()) {
+        GTEST_SKIP() << "memcg memory.stat is unavailable";
+    }
+}
+
+static void SkipIfMemcgReclaimRatiosUnavailable()
+{
+    if (!CanWriteMemcgReclaimRatios() || !CanWriteMemcgNode("memory.app_score")) {
+        GTEST_SKIP() << "memcg score and reclaim ratio nodes are unavailable";
+    }
+}
+
+static void SkipIfMemcgReadReclaimRatiosUnavailable()
+{
+    if (!CanReadMemcgReclaimRatios()) {
+        GTEST_SKIP() << "memcg reclaim ratio node is unavailable";
+    }
+}
+
+static void SkipIfMemcgSwapInUnavailable()
+{
+    if (!CanWriteMemcgNode("memory.ub_ufs2zram_ratio") ||
+        !CanWriteMemcgNode("memory.force_swapin")) {
+        GTEST_SKIP() << "memcg swap-in nodes are unavailable";
+    }
+}
 
 class MemcgTest : public testing::Test {
 public:
@@ -65,6 +133,7 @@ HWTEST_F(MemcgTest, CreateMemcgTest, TestSize.Level1)
 
 HWTEST_F(MemcgTest, UpdateMemInfoFromKernelTest, TestSize.Level1)
 {
+    SkipIfMemcgMemoryStatUnavailable();
     Memcg* memcg = new Memcg();
     bool ret = memcg->UpdateMemInfoFromKernel();
     EXPECT_EQ(ret, true);
@@ -111,6 +180,7 @@ HWTEST_F(MemcgTest, SetReclaimRatiosTest, TestSize.Level1)
 
 HWTEST_F(MemcgTest, SetScoreAndReclaimRatiosToKernelTest, TestSize.Level1)
 {
+    SkipIfMemcgReclaimRatiosUnavailable();
     Memcg* memcg = new Memcg();
     EXPECT_EQ(memcg->SetScoreAndReclaimRatiosToKernel(), true);
     delete memcg;
@@ -119,6 +189,7 @@ HWTEST_F(MemcgTest, SetScoreAndReclaimRatiosToKernelTest, TestSize.Level1)
 
 HWTEST_F(MemcgTest, SwapInTest, TestSize.Level1)
 {
+    SkipIfMemcgSwapInUnavailable();
     Memcg* memcg = new Memcg();
     EXPECT_EQ(memcg->SwapIn(), true);
     delete memcg;
@@ -135,6 +206,7 @@ HWTEST_F(MemcgTest, GetMemcgPathTest, TestSize.Level1)
 
 HWTEST_F(MemcgTest, ReadScoreAndReclaimRatiosFromKernelTest, TestSize.Level1)
 {
+    SkipIfMemcgReadReclaimRatiosUnavailable();
     Memcg* memcg = new Memcg();
     int score = 0;
     unsigned int mem2zramRatio = 0;
